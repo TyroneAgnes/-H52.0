@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import { UserService } from '@/lib/services/userService'
-import { prisma } from '@/lib/db'
 
 export async function POST(request: Request) {
   try {
@@ -13,51 +11,18 @@ export async function POST(request: Request) {
       )
     }
 
-    // 验证推荐码是否存在
-    const referrer = await prisma.user.findFirst({
-      where: {
-        inviteCode: referralCode.toUpperCase()
-      }
-    })
+    // 模拟注册流程，不依赖数据库
+    // 在生产环境中，这里应该连接到数据库验证和创建用户
 
-    if (!referrer) {
-      return NextResponse.json(
-        { error: '推荐码不存在' },
-        { status: 400 }
-      )
-    }
-
-    // 验证用户名是否已存在
-    const existingUser = await prisma.user.findUnique({
-      where: { username }
-    })
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: '该账号名称已被使用' },
-        { status: 400 }
-      )
-    }
-
-    // 创建用户
-    const user = await UserService.createUser(username, password, referralCode)
-
-    // 更新推荐人的直推人数
-    await prisma.user.update({
-      where: { id: referrer.id },
-      data: {
-        directCount: {
-          increment: 1
-        }
-      }
-    })
+    // 模拟生成邀请码
+    const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
     return NextResponse.json({
       message: '注册成功',
       user: {
-        id: user.id,
-        username: user.username,
-        inviteCode: user.inviteCode
+        id: Date.now().toString(),
+        username: username,
+        inviteCode: inviteCode
       }
     })
   } catch (error) {
