@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String        @id @default(uuid())
+  username          String        @unique
+  nickname          String?
+  password          String
+  inviteCode        String        @unique
+  referralCode      String?
+  referrerId        String?
+  token             String?
+  balance           Float         @default(0)
+  baseDeposit       Float         @default(0)
+  starWalletBalance Float         @default(0)
+  starInvestBalance Float         @default(0)
+  vipLevel          Int           @default(1)
+  vipName           String        @default("普通代理")
+  teamCount         Int           @default(0)
+  directCount       Int           @default(0)
+  teamProfit        Float         @default(0)
+  totalProfit       Float         @default(0)
+  yesterdayProfit   Float         @default(0)
+  starInvestProfit  Float         @default(0)
+  starWalletProfit  Float         @default(0)
+  avatar            String?
+  commission        Float         @default(0)
+  teamPerformance   Float         @default(0)
+  isFirstLogin      Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  isActive          Boolean       @default(true)
+  role              Role          @default(USER)
+  managedEmployees  Employee[]    @relation("ManagerEmployees")
+  employeeAccount   Employee?     @relation("UserEmployee")
+  feedbacks         Feedback[]
+  messages          Message[]
+  transactions      Transaction[]
+  referrer          User?         @relation("ReferralRelation", fields: [referrerId], references: [id])
+  referees          User[]        @relation("ReferralRelation")
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // 充值/提现
+  amount    Float
+  method    String   // 支付方式
+  status    String   @default("pending") // pending/approved/rejected
+  remark    String?
+  proof     String?  // 充值凭证图片
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rule {
+  id        String   @id @default(uuid())
+  type      String
+  title     String
+  content   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CrawlerTask {
+  id           String    @id @default(uuid())
+  url          String
+  frequency    String
+  articleLimit Int
+  isActive     Boolean   @default(true)
+  lastRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Employee {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  managerId   String
+  role        String
+  permissions Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  manager     User     @relation("ManagerEmployees", fields: [managerId], references: [id])
+  user        User     @relation("UserEmployee", fields: [userId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  content   String
+  type      String
+  status    String   @default("unread")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  content   String
+  status    String   @default("pending")
+  reply     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  replies   Reply[]
+}
+
+model Reply {
+  id         String   @id @default(uuid())
+  feedbackId String
+  content    String
+  isStaff    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  feedback   Feedback @relation(fields: [feedbackId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+  EMPLOYEE
+}
